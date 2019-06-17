@@ -21,3 +21,10 @@ setup.log
 
 # Merlin configuring file for Vim and Emacs
 .merlin
+
+# snarky files
+*.zkp
+*.pk
+*.vk
+
+*.build/
