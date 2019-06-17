@@ -1,0 +1,17 @@
+open Field;
+
+request(field) Get_cube_root(field);
+
+let prover =
+  handler {
+    | Get_cube_root(x) => {
+      respond(Provide(3));
+    }
+  };
+
+let main = fun (x : field, ()) => {
+  handle(fun () => {
+    let y = request { Get_cube_root(x); };
+    assert_r1(y, y * y, x);
+  }, prover);
+};
