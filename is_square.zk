@@ -1,0 +1,27 @@
+open Field;
+open Boolean;
+
+let assert_square : field -> boolean = fun(x) => {
+  let y = Prover {
+    if (Field.is_square(x)) {
+      Field.sqrt(x);
+    } else {
+      0;
+    };
+  };
+  assert_r1(y, y, x);
+  1b;
+};
+
+// note - doesn't prove the negative case
+let is_square : field -> boolean = fun(x) => {
+  let on_prover : boolean = Prover {
+    Field.is_square(x);
+  };
+  select(on_prover, ~then_=assert_square(x), ~else_=0b);
+};
+
+let main = fun(x: field, ()) => {
+  let v = is_square(x);
+  Boolean.Assert.is_true(v);
+};
