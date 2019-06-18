@@ -44,8 +44,7 @@ module UInt32 = {
         xs);
     take(
       32i,
-      // TODO: Shouldn't have to put Some here
-      Field.to_bits(~length=max_bit_length, ?allow_overflow=Some(false), xs_sum))
+      Field.to_bits(~length=max_bit_length, xs_sum))
     |> Array.of_list;
   };
 
@@ -334,7 +333,7 @@ let params = {
       };
     };
 
-    let strs = Array.of_list(In_channel.read_lines("bn128-params"));
+    let strs = Array.of_list(read_lines("bn128-params"));
 
     Array.map(fun (s) => {
       switch ( List.map(read_pair, String.split_on_char(semi_colon, s)) ) {
@@ -432,13 +431,24 @@ module Tree = {
 
 let get : field -> field -> field = fun(root: field, key: field) => {
   let value : field = Prover {
-    //print_string("Please enter the value at key");
-    //print_endline(Field.to_string(key));
-    //let s = read_line();
-    //Field.of_string(s);
+    /*
+    print_string("Please enter the value at key");
+    print_endline(Field.to_string(key));
+    let s = read_line();
+    Field.of_string(s);
+    */
     0;
   };
+  // assert the merkle path
   value;
+};
+
+let set : field -> field -> field -> field = fun(root: field, key: field, value: field) => {
+  let updated_root : field = Prover {
+    0;
+  };
+  // assert the new merkle path given the new key
+  updated_root;
 };
 
 let main = fun (root: field, new_root: field, ()) => {
