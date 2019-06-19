@@ -506,8 +506,16 @@ module SparseMerkleTree = {
 
   let set = fun(key: key, value: value, root: root) => {
     let path       = get_path(key);
-    ignore(value_root(key,value,path));
+    ignore(value_root(key, root, path));
     let new_root   = implied_root(value, path, key);
+    new_root;
+  };
+
+  let modify = fun(key: key, func: value -> value, root: root) => {
+    let path = get_path(key);
+    let prev_value = value_root(key, root, path);
+    let new_value = func(prev_value);
+    let new_root = implied_root(new_value, path, key);
     new_root;
   };
 
