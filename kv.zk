@@ -413,45 +413,55 @@ let params = {
 
 module Tree = {
 
-  type key = list(boolean);
-  type path = list(field);
+  type key = list#20(boolean);
+  type value = list#20(boolean);
+  type root = field;
+  type path = list#20(field);
 
-  let implied_root =
+  request(path) Get_path(key)
+  with handler (key) => {
+    print_string("Please enter the path for key");
+    //print_endline(key);
+    let s = read_line();
+    let f = Field.of_string(s);
+    respond(Provide([f]));
+  };
+
+  request(field) Get_value(key)
+  with handler (key) => {
+    print_string("Please enter the value at key ");
+    let f = Field.of_string(read_line());
+    respond(Provide(f));
+  };
+
+  let ext_get_value : key -> value = fun(key) => {
+    let v_field = request { Get_value(key); };
+    // TODO we should calculate this in the prover
+    Field.to_bits(v_field);
+  };
+
+  let implied_root : value -> path -> key -> root =
     fun (leaf, (path: list(field)), addr) => {
       List.fold_left2 (fun (acc : field, neighbor, b) => {
           Pedersen.digest_bits(
             Field.to_bits(acc) @ Field.to_bits(neighbor));
         },
-        leaf,
+        Field.of_bits(leaf),
         path,
         addr);
     };
 
-};
-
-let get : field -> field -> field = fun(root: field, key: field) => {
-  let value : field = Prover {
-    /*
-    print_string("Please enter the value at key");
-    print_endline(Field.to_string(key));
-    let s = read_line();
-    Field.of_string(s);
-    */
-    0;
+  let get = fun(key: key, root: root) => {
+    let path = request { Get_path(key); };
+    // TODO must calculate the path deterministically
+    let value = ext_get_value(key);
+    let expected_root = implied_root(value, path, key);
+    Field.Assert.equal(expected_root, root);
+    value;
   };
-  // assert the merkle path
-  value;
+
 };
 
-let set : field -> field -> field -> field = fun(root: field, key: field, value: field) => {
-  let updated_root : field = Prover {
-    0;
-  };
-  // assert the new merkle path given the new key
-  updated_root;
-};
-
-let main = fun (root: field, new_root: field, ()) => {
-  let expected = get(root, new_root);
-  Field.Assert.equal(expected, new_root);
+let main = fun(root: field, new_root: field, ()) => {
+  assert_r1(root, root, new_root);
 };
