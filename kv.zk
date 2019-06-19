@@ -415,7 +415,7 @@ module SparseMerkleTree = {
 
   type key = list#20(boolean);
   type value = list#20(boolean);
-  type root = field;
+  type root = list#20(boolean);
   type path = list#20(field);
 
   request(path) Get_path(key);
@@ -444,13 +444,14 @@ module SparseMerkleTree = {
 
   let implied_root : value -> path -> key -> root =
     fun (leaf, (path: list(field)), addr) => {
-      List.fold_left2 (fun (acc : field, neighbor, b) => {
+      let root_field = List.fold_left2 (fun (acc : field, neighbor, b) => {
           Pedersen.digest_bits(
             Field.to_bits(acc) @ Field.to_bits(neighbor));
         },
         Field.of_bits(leaf),
         path,
         addr);
+      Field.to_bits(root_field);
     };
 
   let get = fun(key: key, root: root) => {
@@ -458,7 +459,7 @@ module SparseMerkleTree = {
     // TODO must calculate the path deterministically
     let value = ext_get_value(key);
     let expected_root = implied_root(value, path, key);
-    Field.Assert.equal(expected_root, root);
+    Field.Assert.equal(Field.of_bits(expected_root), Field.of_bits(root));
     value;
   };
 
