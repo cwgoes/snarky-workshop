@@ -1,6 +1,6 @@
 **Snarkynet**
 
-Interaction nets in a SNARK using [Snarky](https://github.com/o1-labs/snarky) (not yet functional).
+Various programs in a SNARK using [Snarky](https://github.com/o1-labs/snarky) (not yet entirely functional).
 
 Usage:
 
