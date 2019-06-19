@@ -3,6 +3,7 @@
 import subprocess
 
 def pederson_hash(val):
+    print('hash', val)
     proc = subprocess.Popen(
         ['/home/cwgoes/.opam/snarky/bin/dune', 'exec', 'crypto_util/crypto_util.exe', val],
         cwd = '/home/cwgoes/temporary/snarky',
@@ -14,32 +15,49 @@ def pederson_hash(val):
 def flatten(l):
     return [x for y in l for x in y]
 
-def key_range(depth):
+def key_range_base(depth):
     if depth == 1:
         return [[0], [1]]
-    recur = key_range(depth - 1)
+    recur = key_range_base(depth - 1)
     ret = []
     for k in recur:
         ret += [[0] + k]
         ret += [[1] + k]
     return ret
 
+def key_to_string(key):
+    return ''.join(str(s) for s in key)
+
+def key_range(depth):
+    return sorted(key_to_string(k) for k in key_range_base(depth))
+
 class SparseMerkleTree():
 
     def __init__(self, depth = 3):
         self.depth = depth
         self.dict = {}
+        for k in self.key_range():
+            self.set(k, '0')
+
+    def key_range(self):
+        return key_range(self.depth)
 
     def root_hash(self):
-        ## todo cache me
-        return 0
+        hashes = {}
+        for k in self.key_range():
+            hashes[k] = pederson_hash(self.get(k))
+        for depth in range(1, self.depth)[::-1]:
+            for k in key_range(depth):
+                hashes[k] = pederson_hash(hashes[k + '0'] + hashes[k + '1'])
+        print(hashes)
+        return pederson_hash(hashes['0'] + hashes['1'])
    
-    def get(key):
-        return ''
+    def get(self, key):
+        return self.dict[key]
 
-    def set(key, value):
-        return
+    def set(self, key, value):
+        self.dict[key] = value
 
 if __name__ == '__main__':
-    print(key_range(3))
-    print(pederson_hash('hello world'))
+    t = SparseMerkleTree()
+    print(t.root_hash())
