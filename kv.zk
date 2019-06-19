@@ -415,12 +415,13 @@ let params = {
 
 module SparseMerkleTree = {
 
+  type depth('a) = list#3('a);
   type triple('a) = {fst: 'a, snd: 'a, thd: 'a};
 
-  type key = triple(boolean);
+  type key = depth(boolean);
   type value = field;
   type root = field;
-  type path = triple(field);
+  type path = depth(field);
 
   let ask_value = fun (str,respond) => {
     Prover {
@@ -461,16 +462,6 @@ module SparseMerkleTree = {
     respond(Provide(f));
   };
 
-  let path_to_list : path -> list(field) = fun(p: path) => {
-    let {fst, snd, thd} = p;
-    [fst, snd, thd];
-  };
-
-  let key_to_list : key -> list(boolean) = fun(k: key) => {
-    let {fst, snd, thd} = k;
-    [fst, snd, thd];
-  };
-
   let implied_root : value -> path -> key -> root =
     fun (leaf: value, path: path, key: key) => {
       let root = List.fold_left2 (fun (acc : field, neighbor, b) => {
@@ -483,13 +474,14 @@ module SparseMerkleTree = {
           Pedersen.digest_bits(bits);
         },
         leaf,
-        path_to_list(path),
-        key_to_list(key));
+        path,
+        key);
       root;
     };
 
-  let get_path = fun (key : key) => {
-    {fst: request { Get_path_0(key); }, snd: request { Get_path_1(key); }, thd: request { Get_path_2(key); }};
+  let get_path = fun (key : key) =>
+    {
+    [request { Get_path_0(key); }, request { Get_path_1(key); }, request { Get_path_2(key);}];
     };
 
   let value_root = fun (key: key, root: root, path:path) => {
@@ -551,9 +543,9 @@ let verify_ownership = fun (expected_output: field) => {
 };
 
 let main = fun(root: field, new_root: field, ()) => {
-  let read_key  = SparseMerkleTree.{{fst: 0b, snd: 1b, thd: 0b};};
+  let read_key  = [0b, 1b, 0b];
   let value     = SparseMerkleTree.get(read_key, root);
-  let write_key = SparseMerkleTree.{{fst: 1b, snd: 1b, thd: 0b};};
+  let write_key = SparseMerkleTree.{[1b,1b,0b];};
   let expected_new_root = SparseMerkleTree.set(write_key, value, root);
   Field.Assert.equal(new_root, expected_new_root);
 };
