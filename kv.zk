@@ -495,7 +495,9 @@ module SparseMerkleTree = {
 };
 
 let main = fun(root: field, new_root: field, ()) => {
-  let key = {SparseMerkleTree.fst: 0b, SparseMerkleTree.snd: 1b, SparseMerkleTree.thd: 0b};
-  let value = SparseMerkleTree.get(key, root);
-  Field.Assert.equal(value, new_root);
+  let read_key = {SparseMerkleTree.fst: 0b, SparseMerkleTree.snd: 1b, SparseMerkleTree.thd: 0b};
+  let value = SparseMerkleTree.get(read_key, root);
+  let write_key = {SparseMerkleTree.fst: 1b, SparseMerkleTree.snd: 1b, SparseMerkleTree.thd: 0b};
+  let expected_new_root = SparseMerkleTree.set(write_key, value, root);
+  Field.Assert.equal(new_root, expected_new_root);
 };
