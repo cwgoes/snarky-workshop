@@ -413,21 +413,33 @@ let params = {
 
 module SparseMerkleTree = {
 
-  type key = list#20(boolean);
-  type value = list#20(boolean);
-  type root = list#20(boolean);
-  type path = list#20(field);
+  type triple('a) = ('a, 'a, 'a);
 
-  request(path) Get_path(key);
-  /*
+  type key = triple(boolean);
+  type value = field;
+  type root = field;
+  type path = triple(field);
+
+  request(field) Get_path_0(key)
   with handler (key) => {
-    print_string("Please enter the path for key");
-    //print_endline(key);
-    let s = read_line();
-    let f = Field.of_string(s);
-    respond(Provide(path));
+    print_string("Please enter path0 for key");
+    let f = Field.of_string(read_line());
+    respond(Provide(f));
   };
-  */
+
+  request(field) Get_path_1(key)
+  with handler (key) => {
+    print_string("Please enter path1 for key");
+    let f = Field.of_string(read_line());
+    respond(Provide(f));
+  };
+
+  request(field) Get_path_2(key)
+  with handler (key) => {
+    print_string("Please enter path2 for key");
+    let f = Field.of_string(read_line());
+    respond(Provide(f));
+  };
 
   request(field) Get_value(key)
   with handler (key) => {
@@ -436,36 +448,45 @@ module SparseMerkleTree = {
     respond(Provide(f));
   };
 
-  let ext_get_value : key -> value = fun(key) => {
-    let v_field = request { Get_value(key); };
-    // TODO we should calculate this in the prover
-    Field.to_bits(v_field);
+  
+
+  let path_to_list : path -> list(field) = fun(p: path) => {
+    let (p0, p1, p2) = p;
+    [p0, p1, p2];
+  };
+
+  let key_to_list : key -> list(boolean) = fun(k: key) => {
+    let (k0, k1, k2) = k;
+    [k0, k1, k2];
   };
 
   let implied_root : value -> path -> key -> root =
-    fun (leaf, (path: list(field)), addr) => {
-      let root_field = List.fold_left2 (fun (acc : field, neighbor, b) => {
-          Pedersen.digest_bits(
-            Field.to_bits(acc) @ Field.to_bits(neighbor));
+    fun (leaf: value, path: path, key: key) => {
+      let root = List.fold_left2 (fun (acc : field, neighbor, b) => {
+          // position-binding; key determines left / right
+          let bits = select(
+            b,
+            ~then_=Field.to_bits(acc) @ Field.to_bits(neighbor),
+            ~else_=Field.to_bits(neighbor) @ Field.to_bits(acc)
+          );
+          Pedersen.digest_bits(bits);
         },
-        Field.of_bits(leaf),
-        path,
-        addr);
-      Field.to_bits(root_field);
+        leaf,
+        path_to_list(path),
+        key_to_list(key));
+      root;
     };
 
   let get = fun(key: key, root: root) => {
-    let path = request { Get_path(key); };
-    // TODO must calculate the path deterministically
-    let value = ext_get_value(key);
+    let path = (request { Get_path_0(key); }, request { Get_path_1(key); }, request { Get_path_2(key); });
+    let value = request { Get_value(key); };
     let expected_root = implied_root(value, path, key);
-    Field.Assert.equal(Field.of_bits(expected_root), Field.of_bits(root));
+    Field.Assert.equal(expected_root, root);
     value;
   };
 
   let set = fun(key: key, value: value, root: root) => {
-    let path = request { Get_path(key); };
-    // TODO must calculate the path deterministically
+    let path = (request { Get_path_0(key); }, request { Get_path_1(key); }, request { Get_path_2(key); });
     // TODO must incorporate updates to path
     // now recalculate new root with known value
     let expected_root = implied_root(value, path, key);
@@ -475,5 +496,6 @@ module SparseMerkleTree = {
 };
 
 let main = fun(root: field, new_root: field, ()) => {
-  assert_r1(root, root, new_root);
+  let value = SparseMerkleTree.get((0b, 1b, 0b), root);
+  Field.Assert.equal(value, new_root);
 };
