@@ -2,7 +2,7 @@ set -e
 
 FILE=$1
 ARGS=$2
-CLI=/home/cwgoes/temporary/snarky/_build/install/default/bin/snarky_cli
+CLI=snarky_cli
 PROOF=proof
 echo "Running with file: $1, arguments: $ARGS"
 
