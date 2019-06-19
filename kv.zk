@@ -448,8 +448,6 @@ module SparseMerkleTree = {
     respond(Provide(f));
   };
 
-  
-
   let path_to_list : path -> list(field) = fun(p: path) => {
     let (p0, p1, p2) = p;
     [p0, p1, p2];
@@ -496,6 +494,7 @@ module SparseMerkleTree = {
 };
 
 let main = fun(root: field, new_root: field, ()) => {
-  let value = SparseMerkleTree.get((0b, 1b, 0b), root);
+  let key = (0b, 1b, 0b);
+  let value = SparseMerkleTree.get(key, root);
   Field.Assert.equal(value, new_root);
 };
