@@ -411,21 +411,23 @@ let params = {
   let digest_bits : list(boolean) -> field = fun (bs) => { digest(group3(bs)); };
 };
 
-module Tree = {
+module SparseMerkleTree = {
 
   type key = list#20(boolean);
   type value = list#20(boolean);
   type root = field;
   type path = list#20(field);
 
-  request(path) Get_path(key)
+  request(path) Get_path(key);
+  /*
   with handler (key) => {
     print_string("Please enter the path for key");
     //print_endline(key);
     let s = read_line();
     let f = Field.of_string(s);
-    respond(Provide([f]));
+    respond(Provide(path));
   };
+  */
 
   request(field) Get_value(key)
   with handler (key) => {
@@ -458,6 +460,15 @@ module Tree = {
     let expected_root = implied_root(value, path, key);
     Field.Assert.equal(expected_root, root);
     value;
+  };
+
+  let set = fun(key: key, value: value, root: root) => {
+    let path = request { Get_path(key); };
+    // TODO must calculate the path deterministically
+    // TODO must incorporate updates to path
+    // now recalculate new root with known value
+    let expected_root = implied_root(value, path, key);
+    expected_root;
   };
 
 };
