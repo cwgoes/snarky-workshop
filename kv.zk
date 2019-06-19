@@ -422,8 +422,19 @@ module SparseMerkleTree = {
   type root = field;
   type path = triple(field);
 
+  let ask_value = fun (str,respond) => {
+    Prover {
+    print_string(str);
+    read_line()
+    |> Field.of_string
+    |> (fun (x) => { Request.Response.Provide(x); })
+    |> respond;
+  };
+  };
+
   request(field) Get_path_0(key)
   with handler (key) => {
+    /* ask_value("Please enter path0 for key", respond, ()); */
     print_string("Please enter path0 for key");
     let f = Field.of_string(read_line());
     respond(Provide(f));
@@ -477,20 +488,26 @@ module SparseMerkleTree = {
       root;
     };
 
-  let get = fun(key: key, root: root) => {
-    let path = {fst: request { Get_path_0(key); }, snd: request { Get_path_1(key); }, thd: request { Get_path_2(key); }};
-    let value = request { Get_value(key); };
+  let get_path = fun (key : key) => {
+    {fst: request { Get_path_0(key); }, snd: request { Get_path_1(key); }, thd: request { Get_path_2(key); }};
+    };
+
+  let value_root = fun (key: key, root: root, path:path) => {
+    let value         = request { Get_value(key); };
     let expected_root = implied_root(value, path, key);
     Field.Assert.equal(expected_root, root);
     value;
   };
 
+  let get = fun(key: key, root: root) => {
+    let path = get_path(key);
+    value_root(key,root,path);
+  };
+
   let set = fun(key: key, value: value, root: root) => {
-    let path = {fst: request { Get_path_0(key); }, snd: request { Get_path_1(key); }, thd: request { Get_path_2(key); }};
-    let prev_value = request { Get_value(key); };
-    let expected_root = implied_root(prev_value, path, key);
-    Field.Assert.equal(expected_root, root);
-    let new_root = implied_root(value, path, key);
+    let path       = get_path(key);
+    ignore(value_root(key,value,path));
+    let new_root   = implied_root(value, path, key);
     new_root;
   };
 
