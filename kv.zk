@@ -413,7 +413,7 @@ let params = {
 
 module SparseMerkleTree = {
 
-  type triple('a) = ('a, 'a, 'a);
+  type triple('a) = {fst: 'a, snd: 'a, thd: 'a};
 
   type key = triple(boolean);
   type value = field;
@@ -449,13 +449,13 @@ module SparseMerkleTree = {
   };
 
   let path_to_list : path -> list(field) = fun(p: path) => {
-    let (p0, p1, p2) = p;
-    [p0, p1, p2];
+    let {fst, snd, thd} = p;
+    [fst, snd, thd];
   };
 
   let key_to_list : key -> list(boolean) = fun(k: key) => {
-    let (k0, k1, k2) = k;
-    [k0, k1, k2];
+    let {fst, snd, thd} = k;
+    [fst, snd, thd];
   };
 
   let implied_root : value -> path -> key -> root =
@@ -476,7 +476,7 @@ module SparseMerkleTree = {
     };
 
   let get = fun(key: key, root: root) => {
-    let path = (request { Get_path_0(key); }, request { Get_path_1(key); }, request { Get_path_2(key); });
+    let path = {fst: request { Get_path_0(key); }, snd: request { Get_path_1(key); }, thd: request { Get_path_2(key); }};
     let value = request { Get_value(key); };
     let expected_root = implied_root(value, path, key);
     Field.Assert.equal(expected_root, root);
@@ -484,7 +484,7 @@ module SparseMerkleTree = {
   };
 
   let set = fun(key: key, value: value, root: root) => {
-    let path = (request { Get_path_0(key); }, request { Get_path_1(key); }, request { Get_path_2(key); });
+    let path = {fst: request { Get_path_0(key); }, snd: request { Get_path_1(key); }, thd: request { Get_path_2(key); }};
     // TODO must incorporate updates to path
     // now recalculate new root with known value
     let expected_root = implied_root(value, path, key);
@@ -494,7 +494,7 @@ module SparseMerkleTree = {
 };
 
 let main = fun(root: field, new_root: field, ()) => {
-  let key = (0b, 1b, 0b);
+  let key = {SparseMerkleTree.fst: 0b, SparseMerkleTree.snd: 1b, SparseMerkleTree.thd: 0b};
   let value = SparseMerkleTree.get(key, root);
   Field.Assert.equal(value, new_root);
 };
