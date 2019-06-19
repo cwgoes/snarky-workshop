@@ -485,10 +485,11 @@ module SparseMerkleTree = {
 
   let set = fun(key: key, value: value, root: root) => {
     let path = {fst: request { Get_path_0(key); }, snd: request { Get_path_1(key); }, thd: request { Get_path_2(key); }};
-    // TODO must incorporate updates to path
-    // now recalculate new root with known value
-    let expected_root = implied_root(value, path, key);
-    expected_root;
+    let prev_value = request { Get_value(key); };
+    let expected_root = implied_root(prev_value, path, key);
+    Field.Assert.equal(expected_root, root);
+    let new_root = implied_root(value, path, key);
+    new_root;
   };
 
 };
