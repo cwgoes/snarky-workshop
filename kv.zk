@@ -39,7 +39,7 @@ module UInt32 = {
       List.fold_left(
         fun (acc, x) => {
           Field.(+)(Field.of_bits(Array.to_list(x)), acc);
-        }, 
+        },
         0,
         xs);
     take(
@@ -61,7 +61,7 @@ module UInt32 = {
   };
 
   let of_int : int -> t = fun (n) => {
-    loop( 
+    loop(
       fun (self, (i, acc)) => {
         switch (i) {
           | 32i => acc
@@ -188,7 +188,7 @@ module Blake2 = {
     let n = Array.length(bs);
     switch (mod(n, block_size_in_bits)) {
       | 0i => bs
-      | k => 
+      | k =>
         Array.append(bs,
           Array.create(block_size_in_bits - k, 0b))
     };
@@ -304,7 +304,7 @@ module Curve = {
     let res = (lambda * (ax - cx)) - ay;
     respond(Provide(res));
   };
-  
+
   let add_unsafe = fun ((ax, ay), (bx, by)) => {
     let lambda = div_unsafe(Field.(-)(by, ay), Field.(-)(bx, ax));
     let cx = request { Addx { lambda, ax, bx }; };
@@ -364,7 +364,7 @@ let params = {
       + ((a4 + a1 - a2 - a3) * bool(s_and));
     };
     let (x_q, y_q) = transpose(q);
-    (lookup_one(x_q), (1 - 2 * bool(s2)) * lookup_one(y_q)); 
+    (lookup_one(x_q), (1 - 2 * bool(s2)) * lookup_one(y_q));
   };
 
   let digest = fun (triples : list(triple(boolean))) : Digest.t => {
@@ -462,21 +462,18 @@ module SparseMerkleTree = {
     respond(Provide(f));
   };
 
-  let implied_root : value -> path -> key -> root =
-    fun (leaf: value, path: path, key: key) => {
-      let root = List.fold_left2 (fun (acc : field, neighbor, b) => {
+  let implied_root : value:value -> path:path -> key:key -> root =
+    fun (~value, ~path: path, ~key: key) => {
+      let leaf = value;
+      List.fold_left2 (fun (acc : field, neighbor, b) => {
           // position-binding; key determines left / right
-          let bits = select(
-            b,
-            ~then_=Field.to_bits(acc) @ Field.to_bits(neighbor),
-            ~else_=Field.to_bits(neighbor) @ Field.to_bits(acc)
-          );
-          Pedersen.digest_bits(bits);
-        },
-        leaf,
-        path,
-        key);
-      root;
+        let bits = select(
+          b,
+          ~then_=Field.to_bits(acc) @ Field.to_bits(neighbor),
+          ~else_=Field.to_bits(neighbor) @ Field.to_bits(acc)
+        );
+        Pedersen.digest_bits(bits);
+      }, leaf, path, key);
     };
 
   let get_path = fun (key : key) =>
@@ -484,30 +481,30 @@ module SparseMerkleTree = {
     [request { Get_path_0(key); }, request { Get_path_1(key); }, request { Get_path_2(key);}];
     };
 
-  let value_root = fun (key: key, root: root, path:path) => {
+  let value_root = fun (~key: key, ~root: root, ~path:path) => {
     let value         = request { Get_value(key); };
-    let expected_root = implied_root(value, path, key);
+    let expected_root = implied_root(~value, ~path, ~key);
     Field.Assert.equal(expected_root, root);
     value;
   };
 
-  let get = fun(key: key, root: root) => {
+  let get = fun(~key: key, ~root: root) => {
     let path = get_path(key);
-    value_root(key,root,path);
+    value_root(~key,~root,~path);
   };
 
-  let set = fun(key: key, value: value, root: root) => {
+  let set = fun(~key: key, ~value: value, ~root: root) => {
     let path       = get_path(key);
-    ignore(value_root(key, root, path));
-    let new_root   = implied_root(value, path, key);
+    ignore(value_root(~key, ~root, ~path));
+    let new_root   = implied_root(~value, ~path, ~key);
     new_root;
   };
 
-  let modify = fun(key: key, func: value -> value, root: root) => {
+  let modify = fun(~key: key, ~func: value -> value, ~root: root) => {
     let path = get_path(key);
-    let prev_value = value_root(key, root, path);
+    let prev_value = value_root(~key, ~root, ~path);
     let new_value = func(prev_value);
-    let new_root = implied_root(new_value, path, key);
+    let new_root = implied_root(~value=new_value, ~path, ~key);
     new_root;
   };
 
@@ -519,13 +516,13 @@ let pad_to_preimage_length = fun (xs) => {
   let n = List.length(xs);
   if (n > preimage_length) {
     failwith("Too big to be a preimage");
-  } ; 
+  } ;
 
   if (n < preimage_length) {
-    xs @ List.init(preimage_length - n, fun (_) => { false; }); 
+    xs @ List.init(preimage_length - n, fun (_) => { false; });
   } else {
-    xs; 
-  };  
+    xs;
+  };
 };
 
 let get_preimage : unit -> list#256(bool) = fun () => {
@@ -544,8 +541,8 @@ let verify_ownership = fun (expected_output: field) => {
 
 let main = fun(root: field, new_root: field, ()) => {
   let read_key  = [0b, 1b, 0b];
-  let value     = SparseMerkleTree.get(read_key, root);
+  let value     = SparseMerkleTree.get(~key=read_key, ~root);
   let write_key = SparseMerkleTree.{[1b,1b,0b];};
-  let expected_new_root = SparseMerkleTree.set(write_key, value, root);
+  let expected_new_root = SparseMerkleTree.set(~key=write_key, ~value, ~root);
   Field.Assert.equal(new_root, expected_new_root);
 };
