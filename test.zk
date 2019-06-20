@@ -9,7 +9,9 @@ with handler(key) => {
 };
 
 let main = fun(root: field, new_root: field, ()) => {
-  let key = 0;
-  let path = request { Get_path(key); };
-  assert_r1(root, 2, new_root);
+  handle(fun () => {
+    let key = 0;
+    let path = request { Get_path(key); };
+    assert_r1(root, 2, new_root);
+  }, handle_Get_path);
 };
