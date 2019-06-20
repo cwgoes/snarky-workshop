@@ -75,3 +75,5 @@ class SparseMerkleTree():
 if __name__ == '__main__':
     t = SparseMerkleTree()
     print('Root hash: {}'.format(t.root_hash()))
+    t.set('001', '123')
+    print('Root hash after update: {}'.format(t.root_hash()))
