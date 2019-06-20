@@ -13,14 +13,13 @@ def cache(func):
     return wrapper
 
 def pedersen_hash(val):
-    print('ext call to hash: {}'.format(val))
-
     proc = subprocess.Popen(
         ['/home/cwgoes/.opam/snarky/bin/dune', 'exec', 'crypto_util/crypto_util.exe', val],
         cwd = '/home/cwgoes/temporary/snarky',
         stdout = subprocess.PIPE
     )
     output = proc.stdout.read()[:-1]
+    print('ext call to hash: {} return {}'.format(val, output))
     return output
 
 pedersen_hash = cache(pedersen_hash)
@@ -78,7 +77,7 @@ class SparseMerkleTree():
             mod[depth] = '0' if key[depth] == '1' else '1'
             mod = ''.join(mod)
             path.append(hashes[mod])
-        return (path, hashes['root'])
+        return (path, hashes['root'], hashes[key])
    
     def get(self, key):
         return self.dict[key]
@@ -93,4 +92,4 @@ if __name__ == '__main__':
     value = '123'
     print('Setting {} to {}'.format(key, value))
     t.set(key, value)
-    print('Merkle path and root: {}'.format(t.merkle_path(key)))
+    print('Merkle path and root and val-hash: {}'.format(t.merkle_path(key)))
