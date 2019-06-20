@@ -522,11 +522,10 @@ module SparseMerkleTree = {
     new_root;
   };
 
-  let set_and_return = fun(~key: key, ~func: value -> value, ~root: root) => {
+  let set_and_return = fun(~key: key, ~value: value, ~root: root) => {
     let path = merkle_hash_path(key);
     let prev_value = value_root(~key, ~root, ~path);
-    let new_value = func(prev_value);
-    let new_root = implied_root(~value=new_value, ~path, ~key);
+    let new_root = implied_root(~value, ~path, ~key);
     (new_root, prev_value);
   };
 
@@ -541,6 +540,7 @@ module SparseMerkleTree = {
 };
 
 module Preimage = {
+
   let preimage_length = 256i;
 
   let pad_to_preimage_length = fun (xs) => {
@@ -555,11 +555,13 @@ module Preimage = {
       xs;
     };
   };
+
   let get_preimage : unit -> list#256(bool) = fun () => {
     print_endline("Please enter your preimage") ;
     let s = read_line () ;
     pad_to_preimage_length(Extended_lib.Blake2.string_to_bool_list(s));
   };
+
 };
 
 module UTXO = {
@@ -579,12 +581,13 @@ module UTXO = {
     let to_key = SparseMerkleTree.Key.of_field(key_to_transfer);
     let (new_root,prev_value) =
       SparseMerkleTree.set_and_return(~key,
-                                      ~func=(fun (_) => {0;}),
+                                      ~value = 0,
                                       ~root);
     SparseMerkleTree.modify(~key=to_key,
                             ~func=(fun (x) => {Field.{x + prev_value;};}),
                             ~root=new_root);
   };
+
 };
 
 let main = fun(root: field, new_root: field, ()) => {
