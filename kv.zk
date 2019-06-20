@@ -421,6 +421,10 @@ module SparseMerkleTree = {
     type t = depth(boolean);
     let to_key : depth(boolean) -> t = fun (x) => {x;};
     let of_key : t -> depth(boolean) = fun (x) => {x;};
+
+    let of_field : field -> t = fun (x) => {
+      UInt32.take(3i, Field.to_bits(x));
+    }
   };
 
   module Value = {
@@ -431,6 +435,7 @@ module SparseMerkleTree = {
 
   module Root = {
     type t = field;
+
     let to_root : field -> t = fun (x) => {x;};
     let of_root : t -> field = fun (x) => {x;};
   };
@@ -550,20 +555,18 @@ module Preimage = {
       xs;
     };
   };
-};
-
-
-module UTXO = {
-  // Move to Preimage module, after bug fix
   let get_preimage : unit -> list#256(bool) = fun () => {
     print_endline("Please enter your preimage") ;
     let s = read_line () ;
-    Preimage.pad_to_preimage_length(Extended_lib.Blake2.string_to_bool_list(s));
+    pad_to_preimage_length(Extended_lib.Blake2.string_to_bool_list(s));
   };
+};
+
+module UTXO = {
 
   let verify_ownership = fun (expected_output: field) => {
     let preimage : list#256(boolean) = Prover {
-      get_preimage();
+      Preimage.get_preimage();
     };
     let actual_output : field = Pedersen.digest_bits(preimage);
     Field.Assert.equal(expected_output, actual_output);
@@ -572,13 +575,14 @@ module UTXO = {
   // does not compile, due to type incompatability
   let transfer = fun (from_key: field, root: field, key_to_transfer: field) => {
     verify_ownership(from_key);
-    let key = from_key;
+    let key    = SparseMerkleTree.Key.of_field(from_key);
+    let to_key = SparseMerkleTree.Key.of_field(key_to_transfer);
     let (new_root,prev_value) =
       SparseMerkleTree.set_and_return(~key,
-                                      ~func=(fun (x) => {0;}),
+                                      ~func=(fun (_) => {0;}),
                                       ~root);
-    SparseMerkleTree.modify(~key=key_to_transfer,
-                            ~func=(fun (x) => {x + prev_value;}),
+    SparseMerkleTree.modify(~key=to_key,
+                            ~func=(fun (x) => {Field.{x + prev_value;};}),
                             ~root=new_root);
   };
 };
