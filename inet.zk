@@ -1,18 +1,18 @@
 module KVS = {
 
   type t = ();
-  type key = list#20(boolean);
+  type key = field;
   type value = field;
 
-  let get = fun(~store: t, ~key: key) => {
+  let get : store:t -> key:key -> value = fun(~store: t, ~key: key) => {
     0;
   };
 
-  let set = fun(~store: t, ~key: key, ~value: value) => {
+  let set : store:t -> key:key -> value:value -> t = fun(~store: t, ~key: key, ~value: value) => {
     ();
   };
 
-  let modify = fun(~store: t, ~key: key, ~func: value -> value) => {
+  let modify : store:t -> key:key -> func:(value -> value) -> t = fun(~store: t, ~key: key, ~func: value -> value) => {
     ();
   };
 
@@ -40,16 +40,35 @@ module INet = {
   type node =
     Node (kind, triple(port));   
 
-  let new_node = fun(~store: KVS.t, ~kind: kind, ~ports: triple(port)) => {
-    store;
+  let node_of_field : elem:field -> node = fun(~elem: field) => {
+    Node (CON, (Free (0), Free (0), Free (0)));
+  };
+
+  let field_of_node : node:node -> field = fun(~node: node) => {
+    0;
+  };
+
+  let alloc : store:KVS.t -> field = fun(~store: KVS.t) => {
+    // todo nondeterministic, check absence of existing value
+    0;
+  };
+
+  let new_node : store:KVS.t -> kind:kind -> ports:triple(port) -> KVS.t = fun(~store: KVS.t, ~kind: kind, ~ports: triple(port)) => {
+    KVS.set(~store, ~key = alloc(~store), ~value = field_of_node(~node = Node(kind, ports)));
   };
 
   let remove_node = fun(~store: KVS.t, ~addr: field) => {
-    store;
+    KVS.set(~store, ~key = addr, ~value = 0);
   };
 
   let set_ports = fun(~store: KVS.t, ~addr: field, ~ports: triple(port)) => {
-    store;
+    let elem = KVS.get(~store, ~key = addr);
+    let Node (kind, _) = node_of_field(~elem);
+    select(
+      Field.equal(elem, 0),
+      ~then_=store,
+      ~else_=KVS.set(~store, ~key = addr, ~value = field_of_node(~node = Node(kind, ports)))
+    );
   };
 
   let relink = fun(~store: KVS.t, ~node: node, ~old_port: slot, ~new_addr: field, ~new_port: slot) => {
