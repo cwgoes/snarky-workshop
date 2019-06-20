@@ -413,6 +413,31 @@ module Pedersen = {
   let digest_bits : list(boolean) -> field = fun (bs) => { digest(group3(bs)); };
 };
 
+module Preimage = {
+
+  let preimage_length = 256i;
+
+  let pad_to_preimage_length = fun (xs) => {
+    let n = List.length(xs);
+    if (n > preimage_length) {
+      failwith("Too big to be a preimage");
+    };
+
+    if (n < preimage_length) {
+      xs @ List.init(preimage_length - n, fun (_) => { false; });
+    } else {
+      xs;
+    };
+  };
+
+  let get_preimage : unit -> list#256(bool) = fun () => {
+    print_endline("Please enter your preimage") ;
+    let s = read_line () ;
+    pad_to_preimage_length(Extended_lib.Blake2.string_to_bool_list(s));
+  };
+
+};
+
 module SparseMerkleTree = {
 
   type depth('a) = list#3('a);
@@ -462,15 +487,17 @@ module SparseMerkleTree = {
 
   let implied_root : value:value -> path:hash_path -> key:key -> root =
     fun (~value, ~path, ~key) => {
+      let params = load_pedersen_params("bn128-params");
+      let digest_bits = fun(input) => { Extended_lib.Pedersen.digest_bits(params, input); };
       let leaf = value;
       List.fold_left2 (fun (acc : field, neighbor, b) => {
         // position-binding; key determines left / right
         let bits = select(
           b,
-          ~then_=Field.to_bits(acc) @ Field.to_bits(neighbor),
-          ~else_=Field.to_bits(neighbor) @ Field.to_bits(acc)
+          ~then_=UInt32.take(10i, Field.to_bits(acc)) @ UInt32.take(10i, Field.to_bits(neighbor)),
+          ~else_=UInt32.take(10i, Field.to_bits(neighbor)) @ UInt32.take(10i, Field.to_bits(acc))
         );
-        Pedersen.digest_bits(bits);
+        digest_bits(bits);
       }, leaf, path, key);
     };
 
@@ -482,6 +509,11 @@ module SparseMerkleTree = {
   let value_root = fun (~key: key, ~root: root, ~path:hash_path) => {
     let value         = request { Get_value(key); };
     let expected_root = implied_root(~value, ~path, ~key);
+    let () = Prover {
+      print_string("expected root: ");
+      print_endline(Field.to_string(expected_root));
+      ();
+    };
     Field.Assert.equal(expected_root, root);
     value;
   };
@@ -511,31 +543,6 @@ module SparseMerkleTree = {
     let new_value = func(prev_value);
     let new_root = implied_root(~value=new_value, ~path, ~key);
     new_root;
-  };
-
-};
-
-module Preimage = {
-
-  let preimage_length = 256i;
-
-  let pad_to_preimage_length = fun (xs) => {
-    let n = List.length(xs);
-    if (n > preimage_length) {
-      failwith("Too big to be a preimage");
-    };
-
-    if (n < preimage_length) {
-      xs @ List.init(preimage_length - n, fun (_) => { false; });
-    } else {
-      xs;
-    };
-  };
-
-  let get_preimage : unit -> list#256(bool) = fun () => {
-    print_endline("Please enter your preimage") ;
-    let s = read_line () ;
-    pad_to_preimage_length(Extended_lib.Blake2.string_to_bool_list(s));
   };
 
 };
@@ -593,10 +600,13 @@ let prover =
 
 let main = fun(root: field, new_root: field, ()) => {
   handle (fun () => {
-    let read_key  = [0b, 1b, 0b];
+    let read_key  = [0b, 0b, 0b];
     let value     = SparseMerkleTree.get(~key=read_key, ~root);
+    /*
     let write_key = [1b,1b,0b];
     let expected_new_root = SparseMerkleTree.set(~key=write_key, ~value, ~root);
     Field.Assert.equal(new_root, expected_new_root);
+    */
+    ();
   }, prover);
 };

@@ -14,7 +14,7 @@ def cache(func):
 
 def pedersen_hash(val):
     proc = subprocess.Popen(
-        ['/home/cwgoes/.opam/snarky/bin/dune', 'exec', '--', 'crypto_util/crypto_util.exe', 'pedersen', val, '-padded-length', '256'],
+        ['/home/cwgoes/.opam/snarky/bin/dune', 'exec', '--', 'crypto_util/crypto_util.exe', 'pedersen', val],
         cwd = '/home/cwgoes/temporary/snarky',
         stdout = subprocess.PIPE
     )
