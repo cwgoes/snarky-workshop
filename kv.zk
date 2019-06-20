@@ -455,34 +455,10 @@ module SparseMerkleTree = {
     };
   };
 
-  request(field) Get_path_0(key)
-  with handler (key) => {
-    /* ask_value("Please enter path0 for key", respond, ()); */
-    print_string("Please enter path0 for key");
-    let f = Field.of_string(read_line());
-    respond(Provide(f));
-  };
-
-  request(field) Get_path_1(key)
-  with handler (key) => {
-    print_string("Please enter path1 for key");
-    let f = Field.of_string(read_line());
-    respond(Provide(f));
-  };
-
-  request(field) Get_path_2(key)
-  with handler (key) => {
-    print_string("Please enter path2 for key");
-    let f = Field.of_string(read_line());
-    respond(Provide(f));
-  };
-
-  request(field) Get_value(key)
-  with handler (key) => {
-    print_string("Please enter the value at key ");
-    let f = Field.of_string(read_line());
-    respond(Provide(f));
-  };
+  request(field) Get_path_0(key);
+  request(field) Get_path_1(key);
+  request(field) Get_path_2(key);
+  request(field) Get_value(key);
 
   let implied_root : value:value -> path:hash_path -> key:key -> root =
     fun (~value, ~path, ~key) => {
@@ -587,10 +563,30 @@ module UTXO = {
   };
 };
 
+
+let ask_value = fun (str) => {
+  Prover {
+  print_string(str);
+  read_line()
+  |> Field.of_string
+  |> (fun (x) => { Request.Response.Provide(x); });
+  };
+};
+
+let prover =
+  handler {
+  | SparseMerkleTree.Get_path_0(key) => { ask_value("Please enter path0 for key") |> respond; }
+  | SparseMerkleTree.Get_path_1(key) => { ask_value("Please enter path1 for key") |> respond; }
+  | SparseMerkleTree.Get_path_2(key) => { ask_value("Please enter path2 for key") |> respond; }
+  | SparseMerkleTree.Get_value(key)  => { ask_value("Please enter at key") |> respond;  }
+};
+
 let main = fun(root: field, new_root: field, ()) => {
-  let read_key  = [0b, 1b, 0b];
-  let value     = SparseMerkleTree.get(~key=read_key, ~root);
-  let write_key = [1b,1b,0b];
-  let expected_new_root = SparseMerkleTree.set(~key=write_key, ~value, ~root);
-  Field.Assert.equal(new_root, expected_new_root);
+  handle (fun () => {
+    let read_key  = [0b, 1b, 0b];
+    let value     = SparseMerkleTree.get(~key=read_key, ~root);
+    let write_key = [1b,1b,0b];
+    let expected_new_root = SparseMerkleTree.set(~key=write_key, ~value, ~root);
+    Field.Assert.equal(new_root, expected_new_root);
+  }, prover);
 };
