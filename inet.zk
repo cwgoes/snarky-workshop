@@ -1,3 +1,23 @@
+module KVS = {
+
+  type t = ();
+  type key = list#20(boolean);
+  type value = field;
+
+  let get = fun(~store: t, ~key: key) => {
+    0;
+  };
+
+  let set = fun(~store: t, ~key: key, ~value: value) => {
+    ();
+  };
+
+  let modify = fun(~store: t, ~key: key, ~func: value -> value) => {
+    ();
+  };
+
+};
+
 module INet = {
 
   type triple('a) = ('a, 'a, 'a);
@@ -19,6 +39,26 @@ module INet = {
 
   type node =
     Node (kind, triple(port));   
+
+  let new_node = fun(~store: KVS.t, ~kind: kind, ~ports: triple(port)) => {
+    store;
+  };
+
+  let remove_node = fun(~store: KVS.t, ~addr: field) => {
+    store;
+  };
+
+  let set_ports = fun(~store: KVS.t, ~addr: field, ~ports: triple(port)) => {
+    store;
+  };
+
+  let relink = fun(~store: KVS.t, ~node: node, ~old_port: slot, ~new_addr: field, ~new_port: slot) => {
+    store;
+  };
+
+  let reduce_step = fun(~store: KVS.t, ~addr: field) => {
+    store;
+  };
 
 };
 
