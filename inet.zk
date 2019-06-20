@@ -1,6 +1,6 @@
 module KVS = {
 
-  type t = ();
+  type t = field;
   type key = field;
   type value = field;
 
@@ -9,11 +9,11 @@ module KVS = {
   };
 
   let set : store:t -> key:key -> value:value -> t = fun(~store: t, ~key: key, ~value: value) => {
-    ();
+    0;
   };
 
   let modify : store:t -> key:key -> func:(value -> value) -> t = fun(~store: t, ~key: key, ~func: value -> value) => {
-    ();
+    0;
   };
 
 };
@@ -28,6 +28,7 @@ module INet = {
     | TER;
 
   type port =
+    | None
     | Free (field)
     | Pointer (field, slot);
 
@@ -62,8 +63,10 @@ module INet = {
     };
   };
 
-  let new_node : store:KVS.t -> kind:kind -> ports:triple(port) -> KVS.t = fun(~store: KVS.t, ~kind: kind, ~ports: triple(port)) => {
-    KVS.set(~store, ~key = alloc(~store), ~value = field_of_node(~node = Node(kind, ports)));
+  let new_node : store:KVS.t -> kind:kind -> ports:triple(port) -> (field, KVS.t) = fun(~store: KVS.t, ~kind: kind, ~ports: triple(port)) => {
+    let key = alloc(~store);
+    let new_store = KVS.set(~store, ~key, ~value = field_of_node(~node = Node(kind, ports)));
+    (key, new_store);
   };
 
   let remove_node = fun(~store: KVS.t, ~addr: field) => {
@@ -89,37 +92,65 @@ module INet = {
   };
 
   let reduce_step = fun(~store: KVS.t, ~addr: field) => {
-    let Node(kind, ports) = node_of_field(~elem = KVS.get(~store, ~key = addr));
+    let s0 = store;
+    let Node(kind, ports) = node_of_field(~elem = KVS.get(~store = s0, ~key = addr));
     let Pointer(counter_addr, slot) = slot_of_ports(~ports = ports, ~slot = PRI);
     // must be primary slot
     switch (slot) {
       | PRI => ()
       | _ => Boolean.Assert.is_true(0b)
     };
-    let Node(counter_kind, counter_ports) = node_of_field(~elem = KVS.get(~store, ~key = counter_addr));
+    s0;
+    /*
+    let Node(counter_kind, counter_ports) = node_of_field(~elem = KVS.get(~store = s0, ~key = counter_addr));
     switch (kind) {
       | CON =>
         switch (counter_kind) {
-          | CON => store
+          | CON => s0
+          | ERA => {
+            let (e1, s1) = new_node(~store = s0, ~kind = ERA, ~ports = (slot_of_ports(~ports = ports, ~slot = SEC), None, None));
+            let (e2, s2) = new_node(~store = s1, ~kind = ERA, ~ports = (slot_of_ports(~ports = ports, ~slot = TER), None, None));
+            let s3 = relink(~store = s2, ~node = Node(kind, ports), ~old_port = SEC, ~new_addr = e1, ~new_port = PRI);
+            let s4 = relink(~store = s3, ~node = Node(kind, ports), ~old_port = TER, ~new_addr = e2, ~new_port = PRI);
+            let s5 = remove_node(~store = s4, ~addr = addr);
+            let s6 = remove_node(~store = s5, ~addr = counter_addr);
+            s6;
+          }
         }
       | DUP =>
         switch (counter_kind) {
-          | CON => store
+          | ERA => {
+            let (e1, s1) = new_node(~store = s0, ~kind = ERA, ~ports = (slot_of_ports(~ports = ports, ~slot = SEC), None, None));
+            let (e2, s2) = new_node(~store = s1, ~kind = ERA, ~ports = (slot_of_ports(~ports = ports, ~slot = TER), None, None));
+            let s3 = relink(~store = s2, ~node = Node(kind, ports), ~old_port = SEC, ~new_addr = e1, ~new_port = PRI);
+            let s4 = relink(~store = s3, ~node = Node(kind, ports), ~old_port = TER, ~new_addr = e2, ~new_port = PRI);
+            let s5 = remove_node(~store = s4, ~addr = addr);
+            let s6 = remove_node(~store = s5, ~addr = counter_addr);
+            s6;
+          }
+          | DUP => s0
         }
       | ERA =>
         switch (counter_kind) {
           | ERA => {
-            let s1 = KVS.set(~store, ~key = addr, ~value = 0);
+            let s1 = KVS.set(~store = s0, ~key = addr, ~value = 0);
             let s2 = KVS.set(~store = s1, ~key = counter_addr, ~value = 0);
             s2;
           }
         }
-      | _ => store
+      | _ => s0
     };
+    */
   };
 
 };
 
 let main = fun(root: field, new_root: field, ()) => {
-  assert_r1(root, root, new_root);
+  let addr = Prover {
+    print_endline("Enter address of primary port to reduce: ");
+    let s = read_line();
+    Field.of_string(s); 
+  };
+  let expected_root = INet.reduce_step(~store = root, ~addr = addr);
+  Field.Assert.equal(expected_root, new_root);
 };
