@@ -542,7 +542,7 @@ let verify_ownership = fun (expected_output: field) => {
 let main = fun(root: field, new_root: field, ()) => {
   let read_key  = [0b, 1b, 0b];
   let value     = SparseMerkleTree.get(~key=read_key, ~root);
-  let write_key = SparseMerkleTree.{[1b,1b,0b];};
+  let write_key = [1b,1b,0b];
   let expected_new_root = SparseMerkleTree.set(~key=write_key, ~value, ~root);
   Field.Assert.equal(new_root, expected_new_root);
 };
