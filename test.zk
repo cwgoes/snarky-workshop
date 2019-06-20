@@ -1,0 +1,15 @@
+type key = field;
+type path = field;
+
+request(field) Get_path(key)
+with handler(key) => {
+  print_string("Please enter path for key");
+  let f = Field.of_string(read_line());
+  respond(Provide(f));
+};
+
+let main = fun(root: field, new_root: field, ()) => {
+  let key = 0;
+  let path = request { Get_path(key); };
+  assert_r1(root, 2, new_root);
+};
