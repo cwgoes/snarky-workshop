@@ -53,6 +53,15 @@ module INet = {
     0;
   };
 
+  let slot_of_ports = fun(~ports: triple(port), ~slot: slot) => {
+    let (p0, p1, p2) = ports;
+    switch (slot) {
+      | PRI => p0
+      | SEC => p1
+      | TER => p2
+    };
+  };
+
   let new_node : store:KVS.t -> kind:kind -> ports:triple(port) -> KVS.t = fun(~store: KVS.t, ~kind: kind, ~ports: triple(port)) => {
     KVS.set(~store, ~key = alloc(~store), ~value = field_of_node(~node = Node(kind, ports)));
   };
@@ -61,22 +70,52 @@ module INet = {
     KVS.set(~store, ~key = addr, ~value = 0);
   };
 
+  let field_equal = fun(~f0: field, ~f1: field) => {
+    select(Field.equal(f0, f1), ~then_=true, ~else_=false);
+  };
+
   let set_ports = fun(~store: KVS.t, ~addr: field, ~ports: triple(port)) => {
     let elem = KVS.get(~store, ~key = addr);
     let Node (kind, _) = node_of_field(~elem);
-    select(
-      Field.equal(elem, 0),
-      ~then_=store,
-      ~else_=KVS.set(~store, ~key = addr, ~value = field_of_node(~node = Node(kind, ports)))
-    );
+    switch (field_equal(~f0 = elem, ~f1 = 0)) {
+      | true => store
+      | false => KVS.set(~store, ~key = addr, ~value = field_of_node(~node = Node(kind, ports)))
+    };
   };
 
   let relink = fun(~store: KVS.t, ~node: node, ~old_port: slot, ~new_addr: field, ~new_port: slot) => {
+    //let Node (_, ports) = node_of_field(~elem = KVS.get(~store, ~key = ));
     store;
   };
 
   let reduce_step = fun(~store: KVS.t, ~addr: field) => {
-    store;
+    let Node(kind, ports) = node_of_field(~elem = KVS.get(~store, ~key = addr));
+    let Pointer(counter_addr, slot) = slot_of_ports(~ports = ports, ~slot = PRI);
+    // must be primary slot
+    switch (slot) {
+      | PRI => ()
+      | _ => Boolean.Assert.is_true(0b)
+    };
+    let Node(counter_kind, counter_ports) = node_of_field(~elem = KVS.get(~store, ~key = counter_addr));
+    switch (kind) {
+      | CON =>
+        switch (counter_kind) {
+          | CON => store
+        }
+      | DUP =>
+        switch (counter_kind) {
+          | CON => store
+        }
+      | ERA =>
+        switch (counter_kind) {
+          | ERA => {
+            let s1 = KVS.set(~store, ~key = addr, ~value = 0);
+            let s2 = KVS.set(~store = s1, ~key = counter_addr, ~value = 0);
+            s2;
+          }
+        }
+      | _ => store
+    };
   };
 
 };
