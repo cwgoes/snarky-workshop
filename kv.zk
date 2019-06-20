@@ -324,7 +324,7 @@ module Pedersen = {
     type t = array(quadruple((field, field)));
   };
 
-let params = {
+  let params = {
     let comma = char_of_int(44i);
     let semi_colon = char_of_int(59i);
 
@@ -416,12 +416,29 @@ let params = {
 module SparseMerkleTree = {
 
   type depth('a) = list#3('a);
-  type triple('a) = {fst: 'a, snd: 'a, thd: 'a};
+
+  module Key = {
+    type t = depth(boolean);
+    let to_key : depth(boolean) -> t = fun (x) => {x;};
+    let of_key : t -> depth(boolean) = fun (x) => {x;};
+  };
+
+  module Value = {
+    type t = field;
+    let to_value : field -> t = fun (x) => {x;};
+    let of_value : t -> field = fun (x) => {x;};
+  };
+
+  module Root = {
+    type t = field;
+    let to_root : field -> t = fun (x) => {x;};
+    let of_root : t -> field = fun (x) => {x;};
+  };
 
   type key = depth(boolean);
   type value = field;
   type root = field;
-  type path = depth(field);
+  type hash_path = depth(field);
 
   let ask_value = fun (str,respond) => {
     Prover {
@@ -430,7 +447,7 @@ module SparseMerkleTree = {
     |> Field.of_string
     |> (fun (x) => { Request.Response.Provide(x); })
     |> respond;
-  };
+    };
   };
 
   request(field) Get_path_0(key)
@@ -462,11 +479,11 @@ module SparseMerkleTree = {
     respond(Provide(f));
   };
 
-  let implied_root : value:value -> path:path -> key:key -> root =
-    fun (~value, ~path: path, ~key: key) => {
+  let implied_root : value:value -> path:hash_path -> key:key -> root =
+    fun (~value, ~path, ~key) => {
       let leaf = value;
       List.fold_left2 (fun (acc : field, neighbor, b) => {
-          // position-binding; key determines left / right
+        // position-binding; key determines left / right
         let bits = select(
           b,
           ~then_=Field.to_bits(acc) @ Field.to_bits(neighbor),
@@ -476,12 +493,12 @@ module SparseMerkleTree = {
       }, leaf, path, key);
     };
 
-  let get_path = fun (key : key) =>
+  let merkle_hash_path = fun (key : key) =>
     {
     [request { Get_path_0(key); }, request { Get_path_1(key); }, request { Get_path_2(key);}];
     };
 
-  let value_root = fun (~key: key, ~root: root, ~path:path) => {
+  let value_root = fun (~key: key, ~root: root, ~path:hash_path) => {
     let value         = request { Get_value(key); };
     let expected_root = implied_root(~value, ~path, ~key);
     Field.Assert.equal(expected_root, root);
@@ -489,19 +506,27 @@ module SparseMerkleTree = {
   };
 
   let get = fun(~key: key, ~root: root) => {
-    let path = get_path(key);
+    let path = merkle_hash_path(key);
     value_root(~key,~root,~path);
   };
 
   let set = fun(~key: key, ~value: value, ~root: root) => {
-    let path       = get_path(key);
+    let path       = merkle_hash_path(key);
     ignore(value_root(~key, ~root, ~path));
     let new_root   = implied_root(~value, ~path, ~key);
     new_root;
   };
 
+  let set_and_return = fun(~key: key, ~func: value -> value, ~root: root) => {
+    let path = merkle_hash_path(key);
+    let prev_value = value_root(~key, ~root, ~path);
+    let new_value = func(prev_value);
+    let new_root = implied_root(~value=new_value, ~path, ~key);
+    (new_root, prev_value);
+  };
+
   let modify = fun(~key: key, ~func: value -> value, ~root: root) => {
-    let path = get_path(key);
+    let path = merkle_hash_path(key);
     let prev_value = value_root(~key, ~root, ~path);
     let new_value = func(prev_value);
     let new_root = implied_root(~value=new_value, ~path, ~key);
@@ -510,33 +535,52 @@ module SparseMerkleTree = {
 
 };
 
-let preimage_length = 256i;
+module Preimage = {
+  let preimage_length = 256i;
 
-let pad_to_preimage_length = fun (xs) => {
-  let n = List.length(xs);
-  if (n > preimage_length) {
-    failwith("Too big to be a preimage");
-  } ;
+  let pad_to_preimage_length = fun (xs) => {
+    let n = List.length(xs);
+    if (n > preimage_length) {
+      failwith("Too big to be a preimage");
+    };
 
-  if (n < preimage_length) {
-    xs @ List.init(preimage_length - n, fun (_) => { false; });
-  } else {
-    xs;
+    if (n < preimage_length) {
+      xs @ List.init(preimage_length - n, fun (_) => { false; });
+    } else {
+      xs;
+    };
   };
 };
 
-let get_preimage : unit -> list#256(bool) = fun () => {
-  print_endline("Please enter your preimage") ;
-  let s = read_line () ;
-  pad_to_preimage_length(Extended_lib.Blake2.string_to_bool_list(s));
-};
 
-let verify_ownership = fun (expected_output: field) => {
-  let preimage : list#256(boolean) = Prover {
-    get_preimage();
+module UTXO = {
+  // Move to Preimage module, after bug fix
+  let get_preimage : unit -> list#256(bool) = fun () => {
+    print_endline("Please enter your preimage") ;
+    let s = read_line () ;
+    Preimage.pad_to_preimage_length(Extended_lib.Blake2.string_to_bool_list(s));
   };
-  let actual_output : field = Pedersen.digest_bits(preimage);
-  Field.Assert.equal(expected_output, actual_output);
+
+  let verify_ownership = fun (expected_output: field) => {
+    let preimage : list#256(boolean) = Prover {
+      get_preimage();
+    };
+    let actual_output : field = Pedersen.digest_bits(preimage);
+    Field.Assert.equal(expected_output, actual_output);
+  };
+
+  // does not compile, due to type incompatability
+  let transfer = fun (from_key: field, root: field, key_to_transfer: field) => {
+    verify_ownership(from_key);
+    let key = from_key;
+    let (new_root,prev_value) =
+      SparseMerkleTree.set_and_return(~key,
+                                      ~func=(fun (x) => {0;}),
+                                      ~root);
+    SparseMerkleTree.modify(~key=key_to_transfer,
+                            ~func=(fun (x) => {x + prev_value;}),
+                            ~root=new_root);
+  };
 };
 
 let main = fun(root: field, new_root: field, ()) => {
