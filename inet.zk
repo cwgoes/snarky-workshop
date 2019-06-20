@@ -1,0 +1,27 @@
+module INet = {
+
+  type triple('a) = ('a, 'a, 'a);
+
+  type slot =
+    | PRI
+    | SEC
+    | TER;
+
+  type port =
+    | Free (field)
+    | Pointer (field, slot);
+
+  type kind =
+    | CON
+    | DUP
+    | ERA
+    | WIRE;
+
+  type node =
+    Node (kind, triple(port));   
+
+};
+
+let main = fun(root: field, new_root: field, ()) => {
+  assert_r1(root, root, new_root);
+};
