@@ -285,7 +285,7 @@ module Curve = {
   with handler (x, y) => { respond(Provide(x / y)); };
 
   let div_unsafe = fun (x, y) => {
-    let z : field =  request { Div(x, y); };
+    let z : field = handle(fun () => { request { Div(x, y); };}, handle_Div);
     assert_r1(x, y, z) ;
     z;
     /* It would be nice if this were a special syntax but that's
@@ -307,8 +307,8 @@ module Curve = {
 
   let add_unsafe = fun ((ax, ay), (bx, by)) => {
     let lambda = div_unsafe(Field.(-)(by, ay), Field.(-)(bx, ax));
-    let cx = request { Addx { lambda, ax, bx }; };
-    let cy = request { Addy { lambda, ax, ay, cx }; };
+    let cx = handle(fun () => {request { Addx { lambda, ax, bx }; }; }, handle_Addx);
+    let cy = handle(fun () => {request { Addy { lambda, ax, ay, cx }; }; }, handle_Addy);
     assert_r1(lambda, lambda, cx + ax + bx);
     assert_r1(lambda, (ax - cx) , (cy + ay));
     (cx, cy);
