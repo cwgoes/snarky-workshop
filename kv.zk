@@ -566,7 +566,6 @@ module UTXO = {
 
 };
 
-
 let ask_value = fun (str) => {
   Prover {
   print_string(str);
@@ -578,10 +577,18 @@ let ask_value = fun (str) => {
 
 let prover =
   handler {
-  | SparseMerkleTree.Get_path_0(key) => { ask_value("Please enter path0 for key") |> respond; }
-  | SparseMerkleTree.Get_path_1(key) => { ask_value("Please enter path1 for key") |> respond; }
-  | SparseMerkleTree.Get_path_2(key) => { ask_value("Please enter path2 for key") |> respond; }
-  | SparseMerkleTree.Get_value(key)  => { ask_value("Please enter at key") |> respond;  }
+  | SparseMerkleTree.Get_path_0(key) => {
+      ask_value("Please enter path0 for key: ") |> respond;
+    }
+  | SparseMerkleTree.Get_path_1(key) => {
+      ask_value("Please enter path1 for key: ") |> respond;
+    }
+  | SparseMerkleTree.Get_path_2(key) => {
+      ask_value("Please enter path2 for key: ") |> respond;
+    }
+  | SparseMerkleTree.Get_value(key)  => {
+      ask_value("Please enter value at key: ") |> respond;
+    }
 };
 
 let main = fun(root: field, new_root: field, ()) => {
