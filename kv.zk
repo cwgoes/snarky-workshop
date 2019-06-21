@@ -511,14 +511,16 @@ module SparseMerkleTree = {
       let leaf = value;
       List.fold_left2 (fun (acc : field, neighbor, b) => {
         // position-binding; key determines left / right
-        let acc_bits = UInt32.take(10i, Field.to_bits(acc));
-        let nei_bits = UInt32.take(10i, Field.to_bits(neighbor));
+        let acc_bits = UInt32.take(80i, Field.to_bits(acc));
+        let nei_bits = UInt32.take(80i, Field.to_bits(neighbor));
         let left = select(b, ~then_=acc_bits, ~else_=nei_bits);
         let right = select(b, ~then_=nei_bits, ~else_=acc_bits);
         let bits = left @ right;
         let digest = digest_bits(Preimage.pad_to_preimage_length_boolean(bits));
         let () = Prover {
-          print_string("Digest: ");
+          print_string("Acc, neighbor, digest: ");
+          print_endline(Field.to_string(acc));
+          print_endline(Field.to_string(neighbor));
           print_endline(Field.to_string(digest));
         };
         digest;
@@ -608,19 +610,28 @@ let ask_value = fun (str) => {
   };
 };
 
+let ask_field = fun (str) => {
+  Prover {
+  print_string(str);
+  read_line()
+  |> Field.of_string
+  |> (fun (x) => { Request.Response.Provide(x); });
+  };
+};
+
 let prover =
   handler {
   | SparseMerkleTree.Get_path_0(key) => {
-      ask_value("Please enter path0 for key: ") |> respond;
+      ask_field("Please enter path0 for key: ") |> respond;
     }
   | SparseMerkleTree.Get_path_1(key) => {
-      ask_value("Please enter path1 for key: ") |> respond;
+      ask_field("Please enter path1 for key: ") |> respond;
     }
   | SparseMerkleTree.Get_path_2(key) => {
-      ask_value("Please enter path2 for key: ") |> respond;
+      ask_field("Please enter path2 for key: ") |> respond;
     }
   | SparseMerkleTree.Get_value(key)  => {
-      ask_value("Please enter value at key: ") |> respond;
+      ask_field("Please enter value at key: ") |> respond;
     }
 };
 
