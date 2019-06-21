@@ -4,22 +4,23 @@ import subprocess
 
 def cache(func):
     d = {}
-    def wrapper(val):
-        if val in d:
-            return d[val]
-        res = func(val)
-        d[val] = res
+    def wrapper(val1, val2):
+        key = '{}:{}'.format(val1, val2)
+        if key in d:
+            return d[key]
+        res = func(val1, val2)
+        d[key] = res
         return res
     return wrapper
 
-def pedersen_hash(val):
+def pedersen_hash(val1, val2):
     proc = subprocess.Popen(
-        ['/home/cwgoes/.opam/snarky/bin/dune', 'exec', '--', 'crypto_util/crypto_util.exe', 'pedersen', val, '-padded-length', '256'],
+        ['/home/cwgoes/.opam/snarky/bin/dune', 'exec', '--', 'crypto_util/crypto_util.exe', 'pedersen', val1, val2],
         cwd = '/home/cwgoes/temporary/snarky',
         stdout = subprocess.PIPE
     )
     output = proc.stdout.read()[:-1]
-    print('ext call to hash: {} return {}'.format(val, output))
+    print('ext call to hash: {} {} return {}'.format(val1, val2, output))
     return output
 
 pedersen_hash = cache(pedersen_hash)
@@ -43,8 +44,6 @@ def key_to_string(key):
 def key_range(depth):
     return sorted(key_to_string(k) for k in key_range_base(depth))
 
-TRUNCATE = 10
-
 class SparseMerkleTree():
 
     def __init__(self, depth = 3):
@@ -59,11 +58,11 @@ class SparseMerkleTree():
     def calc_all(self):
         hashes = {}
         for k in self.key_range():
-            hashes[k] = pedersen_hash(self.get(k))
+            hashes[k] = self.get(k)
         for depth in range(1, self.depth)[::-1]:
             for k in key_range(depth):
-                hashes[k] = pedersen_hash(hashes[k + '0'][:TRUNCATE] + hashes[k + '1'][:TRUNCATE])
-        hashes['root'] = pedersen_hash(hashes['0'][:TRUNCATE] + hashes['1'][:TRUNCATE])
+                hashes[k] = pedersen_hash(hashes[k + '0'], hashes[k + '1'])
+        hashes['root'] = pedersen_hash(hashes['0'], hashes['1'])
         return hashes
 
     def root_hash(self):
