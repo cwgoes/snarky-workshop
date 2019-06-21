@@ -420,6 +420,7 @@ module Preimage = {
   let pad_to_preimage_length = fun (xs) => {
     let n = List.length(xs);
     if (n > preimage_length) {
+      print_endline(string_of_int(n));
       failwith("Too big to be a preimage");
     };
 
@@ -433,6 +434,7 @@ module Preimage = {
   let pad_to_preimage_length_boolean = fun (xs) => {
     let n = List.length(xs);
     if (n > preimage_length) {
+      print_endline(string_of_int(n));
       failwith("Too big to be a preimage");
     };
 
@@ -506,19 +508,21 @@ module SparseMerkleTree = {
     fun (~value, ~path, ~key) => {
       let params = load_pedersen_params("bn128-params");
       let digest_bits = fun(input) => { Extended_lib.Pedersen.digest_bits(params, input); };
-      digest_bits(Preimage.pad_to_preimage_length_boolean(Field.to_bits(value)));
-      /*
       let leaf = value;
       List.fold_left2 (fun (acc : field, neighbor, b) => {
         // position-binding; key determines left / right
-        let bits = select(
-          b,
-          ~then_=UInt32.take(10i, Field.to_bits(acc)) @ UInt32.take(10i, Field.to_bits(neighbor)),
-          ~else_=UInt32.take(10i, Field.to_bits(neighbor)) @ UInt32.take(10i, Field.to_bits(acc))
-        );
-        digest_bits(bits);
+        let acc_bits = UInt32.take(10i, Field.to_bits(acc));
+        let nei_bits = UInt32.take(10i, Field.to_bits(neighbor));
+        let left = select(b, ~then_=acc_bits, ~else_=nei_bits);
+        let right = select(b, ~then_=nei_bits, ~else_=acc_bits);
+        let bits = left @ right;
+        let digest = digest_bits(Preimage.pad_to_preimage_length_boolean(bits));
+        let () = Prover {
+          print_string("Digest: ");
+          print_endline(Field.to_string(digest));
+        };
+        digest;
       }, leaf, path, key);
-      */
     };
 
   let merkle_hash_path = fun (key : key) =>
