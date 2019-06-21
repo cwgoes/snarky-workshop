@@ -489,16 +489,6 @@ module SparseMerkleTree = {
   type root = field;
   type hash_path = depth(field);
 
-  let ask_value = fun (str,respond) => {
-    Prover {
-    print_string(str);
-    read_line()
-    |> Field.of_string
-    |> (fun (x) => { Request.Response.Provide(x); })
-    |> respond;
-    };
-  };
-
   request(field) Get_path_0(key);
   request(field) Get_path_1(key);
   request(field) Get_path_2(key);
@@ -511,14 +501,14 @@ module SparseMerkleTree = {
       let leaf = value;
       List.fold_left2 (fun (acc : field, neighbor, b) => {
         // position-binding; key determines left / right
-        let acc_bits = UInt32.take(80i, Field.to_bits(acc));
-        let nei_bits = UInt32.take(80i, Field.to_bits(neighbor));
-        let left = select(b, ~then_=acc_bits, ~else_=nei_bits);
-        let right = select(b, ~then_=nei_bits, ~else_=acc_bits);
+        let acc_bits = Field.to_bits(acc);
+        let nei_bits = Field.to_bits(neighbor);
+        let left = select(b, ~then_=nei_bits, ~else_=acc_bits);
+        let right = select(b, ~then_=acc_bits, ~else_=nei_bits);
         let bits = left @ right;
-        let digest = digest_bits(Preimage.pad_to_preimage_length_boolean(bits));
+        let digest = digest_bits(bits);
         let () = Prover {
-          print_string("Acc, neighbor, digest: ");
+          print_string("acc, neighbor, digest: ");
           print_endline(Field.to_string(acc));
           print_endline(Field.to_string(neighbor));
           print_endline(Field.to_string(digest));
@@ -597,17 +587,6 @@ module UTXO = {
                             ~root=new_root);
   };
 
-};
-
-let ask_value = fun (str) => {
-  Prover {
-  print_string(str);
-  read_line()
-  |> Extended_lib.Blake2.string_to_bool_list
-  |> Preimage.pad_to_preimage_length
-  |> Field.of_bits
-  |> (fun (x) => { Request.Response.Provide(x); });
-  };
 };
 
 let ask_field = fun (str) => {
