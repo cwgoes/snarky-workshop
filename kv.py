@@ -91,4 +91,9 @@ if __name__ == '__main__':
     value = '123'
     print('Setting {} to {}'.format(key, value))
     t.set(key, value)
-    print('Merkle path and root and val-hash: {}'.format(t.merkle_path(key)))
+    key = '001'
+    value = '456'
+    print('Setting {} to {}'.format(key, value))
+    t.set(key, value)
+    print('Merkle path and root and val-hash: {}'.format(t.merkle_path('000')))
+    print('Merkle path and root and val-hash: {}'.format(t.merkle_path('001')))

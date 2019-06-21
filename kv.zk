@@ -616,8 +616,10 @@ let prover =
 
 let main = fun(root: field, new_root: field, ()) => {
   handle (fun () => {
-    let read_key  = [0b, 0b, 0b];
-    let value     = SparseMerkleTree.get(~key=read_key, ~root);
+    let read_key_a  = [0b, 0b, 0b];
+    let value_a     = SparseMerkleTree.get(~key=read_key_a, ~root);
+    let read_key_b  = [1b, 0b, 0b];
+    let value_b     = SparseMerkleTree.get(~key=read_key_b, ~root);
     /*
     let write_key = [1b,1b,0b];
     let expected_new_root = SparseMerkleTree.set(~key=write_key, ~value, ~root);
