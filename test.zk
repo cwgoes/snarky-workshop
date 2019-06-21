@@ -1,17 +1,38 @@
 type key = field;
 type path = field;
 
+// Unresolved issue
+
+let prover_test = fun (f : field) => {
+  // Works fine!
+  let () = Prover {
+    print_string(Field.to_string(f));
+  };
+  // Does not work
+  Prover {
+    print_string(Field.to_string(f));
+  };
+  ();
+};
+
+// Resolved issue
 request(field) Get_path(key)
 with handler(key) => {
   print_string("Please enter path for key");
   let f = Field.of_string(read_line());
   respond(Provide(f));
 };
+
+
 // handle_Get_path
 let main = fun(root: field, new_root: field, ()) => {
   handle(fun () => {
     let key = 0;
-    let path = request { Get_path(key); };
-    assert_r1(root, 2, new_root);
+    /* let path = request { Get_path(key); }; */
+    /* assert_r1(root, 2, new_root); */
+
+    // Only errors if we call prover_test in here
+    prover_test(12313);
+    assert_r1(2, 2, 4);
   }, handle_Get_path);
 };
