@@ -97,3 +97,6 @@ if __name__ == '__main__':
     t.set(key, value)
     print('Merkle path and root and val-hash: {}'.format(t.merkle_path('000')))
     print('Merkle path and root and val-hash: {}'.format(t.merkle_path('001')))
+    print('setting...')
+    t.set('000', '456')
+    print('final root: {}'.format(t.root_hash()))
