@@ -430,6 +430,23 @@ module Preimage = {
     };
   };
 
+  let pad_to_preimage_length_boolean = fun (xs) => {
+    let n = List.length(xs);
+    if (n > preimage_length) {
+      failwith("Too big to be a preimage");
+    };
+
+    if (n < preimage_length) {
+      xs @ List.init(preimage_length - n, fun (_) => { 0b; });
+    } else {
+      xs;
+    };
+  };
+
+  let string_to_list = fun(str) => {
+    Extended_lib.Blake2.string_to_bool_list(str);
+  };
+
   let get_preimage : unit -> list#256(bool) = fun () => {
     print_endline("Please enter your preimage") ;
     let s = read_line () ;
@@ -489,6 +506,8 @@ module SparseMerkleTree = {
     fun (~value, ~path, ~key) => {
       let params = load_pedersen_params("bn128-params");
       let digest_bits = fun(input) => { Extended_lib.Pedersen.digest_bits(params, input); };
+      digest_bits(Preimage.pad_to_preimage_length_boolean(Field.to_bits(value)));
+      /*
       let leaf = value;
       List.fold_left2 (fun (acc : field, neighbor, b) => {
         // position-binding; key determines left / right
@@ -499,6 +518,7 @@ module SparseMerkleTree = {
         );
         digest_bits(bits);
       }, leaf, path, key);
+      */
     };
 
   let merkle_hash_path = fun (key : key) =>
@@ -577,7 +597,9 @@ let ask_value = fun (str) => {
   Prover {
   print_string(str);
   read_line()
-  |> Field.of_string
+  |> Extended_lib.Blake2.string_to_bool_list
+  |> Preimage.pad_to_preimage_length
+  |> Field.of_bits
   |> (fun (x) => { Request.Response.Provide(x); });
   };
 };
